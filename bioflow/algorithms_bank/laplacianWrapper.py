@@ -14,6 +14,8 @@ from bioflow.utils.log_behavior import get_logger
 
 log = get_logger(__name__)
 
+# TODO: this will be removed in the master trunk for now, until the refactoring is complete.
+
 
 class LaplacianWrapper(object):
 
