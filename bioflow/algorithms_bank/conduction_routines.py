@@ -6,11 +6,13 @@ import random
 from copy import copy
 import numpy as np
 from itertools import combinations, repeat
+from itertools import chain
 from scipy.sparse import csc_matrix, diags, triu, lil_matrix
 from scipy.sparse.linalg import eigsh
 # noinspection PyUnresolvedReferences
 from scikits.sparse.cholmod import cholesky
 import warnings
+from bioflow.utils.general_utils.improved_iterators import unique_product
 from bioflow.utils.log_behavior import get_logger
 from bioflow.utils.dataviz import render_2d_matrix
 from bioflow.internal_configs import fudge
@@ -175,41 +177,39 @@ def edge_current_iteration(conductivity_laplacian, index_pair,
     return potential_diff, current_upper
 
 
+# TODO: switch from sampling_depth to sampling_proportion
 def master_edge_current(conductivity_laplacian, index_list,
+                        second_index_list=None, sampling_percentage=0.1,
                         cancellation=True, potential_dominated=True, sampling=False,
-                        sampling_depth=10, memory_source=None, memoization=None):
+                        sampling_depth=10,  # TODO: deprecated
+                        memory_source=None,  # TODO: deprecated
+                        memoization=None  # TODO: deprecated
+                        ):
     """
     master method for all the required edge current calculations
 
     :param conductivity_laplacian:
     :param index_list:
+    :param second_index_list:
+    :param sampling_percentage:
     :param cancellation:
     :param potential_dominated:
     :param sampling:
-    :param sampling_depth:
-    :param memory_source:
-    :param memoization:
     :return:
     """
-    # TODO: remove memoization in order to reduce overhead and mongo database load
-    # TODO: add a second index_list where the list of pairs will be generated
-    #       Question: how are we going to deal with lists that have nodes that link to themselves?
-    #       should we iterate over the list to eliminate them all together again?
+    if not second_index_list:
+        second_index_list = index_list
 
-    # generate index list in agreement with the sampling strategy
+    list_of_pairs = [(i, j) for i, j in unique_product(set(index_list), set(second_index_list))]
+    pairs_no = len(list_of_pairs)
+
     if sampling:
-        list_of_pairs = []
-        for _ in repeat(None, sampling_depth):
-            idx_list_c = copy(index_list)
-            random.shuffle(idx_list_c)
-            list_of_pairs += zip(idx_list_c[:len(idx_list_c) / 2],
-                                 idx_list_c[len(idx_list_c) / 2:])
-    else:
-        list_of_pairs = [(i, j) for i, j in combinations(set(index_list), 2)]
-        # TODO: profile to see how heavy this application is and if we could simplify it by using
-        #  a jit-compiled generator
+        random.shuffle(list_of_pairs)  # TODO: PERFORMANCE: potentially memory inefficient. Profile
+        list_of_pairs = list_of_pairs[:int(sampling_percentage*pairs_no)]
 
     total_pairs = len(list_of_pairs)
+
+    log.info('Calculating the flow between %s pairs', total_pairs)
 
     up_pair_2_voltage_current = {}
     current_accumulator = lil_matrix(conductivity_laplacian.shape)
