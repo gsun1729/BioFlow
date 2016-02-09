@@ -28,23 +28,29 @@
         </ul>
       </header>
       <section>
-        <p>|License Type| |Build Status| |Coverage Status| |Branch status| |Code
-Issues| |Duplicate Lines|</p>
+        <p><a href="https://github.com/chiffa/BioFlow/blob/master/License-new_BSD.txt"><img src="https://img.shields.io/badge/license-BSD3-blue.svg" alt="License
+Type"></a>
+<a href="https://travis-ci.org/chiffa/BioFlow"><img src="https://travis-ci.org/chiffa/BioFlow.svg?branch=master" alt="Build
+Status"></a>
+<a href="https://coveralls.io/github/chiffa/BioFlow?branch=master"><img src="https://coveralls.io/repos/chiffa/BioFlow/badge.svg?branch=master&amp;service=github" alt="Coverage
+Status"></a>
+<a href="https://github.com/chiffa/BioFlow/blob/master/README.rst"><img src="https://img.shields.io/badge/branch_status-0.1.0_release_candidate-yellow.svg" alt="Branch
+status"></a>
+<a href="https://www.quantifiedcode.com/app/project/1c3f8cd001a44319abddab249101b646"><img src="https://www.quantifiedcode.com/api/v1/project/1c3f8cd001a44319abddab249101b646/badge.svg" alt="Code
+Issues"></a>
+<a href="http://clonedigger.sourceforge.net/"><img src="https://img.shields.io/badge/duplicate%20lines-17.66%25-yellowgreen.svg" alt="Duplicate
+Lines"></a></p>
 
 <h1>
-<a id="bioflow-project" class="anchor" href="#bioflow-project" aria-hidden="true"><span class="octicon octicon-link"></span></a>BioFlow Project</h1>
+<a id="bioflow-project" class="anchor" href="#bioflow-project" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>BioFlow Project</h1>
 
 <p>Information Flow Analysis in biological networks</p>
 
-<p>Branch v.0.03 - Unstable</p>
-
 <h2>
-<a id="description" class="anchor" href="#description" aria-hidden="true"><span class="octicon octicon-link"></span></a>Description:</h2>
-
-<p>This code is currently under development/</p>
+<a id="description" class="anchor" href="#description" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Description:</h2>
 
 <p>This project's goal is to predict systemic effect of multiple gene
-perturbation, wherther trigered by a drug or by a disease (such as
+perturbation, whether triggered by a drug or by a disease (such as
 cancer or disease with complex genetic background). It's main intended
 uses are prediction of drug toxicity of de-novo drugs due to a
 distributed off-target effect and linkage between a phenotype and a
@@ -55,279 +61,71 @@ predictions with prior biological knowledge and ability to integrate
 such diverse source of knowledge as databases, simulation, publication
 data (currently in dev) and expert knowledge.</p>
 
-<p>This application is provided as-is, without any warranties or support.
-Use it at your onw risk.</p>
-
-<p>However, if you are willing to test it and encounter problems or are
-willing to provide feedback, please fill in an issue ticket on GitHub
-and I will be glad to assist you in the measure of my possibilities.</p>
+<p>The application is currently under development and in alpha stage.
+However, if you desire to use it, you are welcome to do so and fill in
+the tickets if you encounter any issues</p>
 
 <p>The license is BSD, but in case of academic usage, please cite the <em>url</em>
-(publication is in preparation). The full documentation is available at
-<code>readthedocs.org &lt;http://bioflow.readthedocs.org/RTFD&gt;</code>__ or on <code>github
-pages &lt;http://&gt;</code>__</p>
+of this repository (I am currently writing a publication). The full API
+documentation is available at
+<a href="http://bioflow.readthedocs.org/en/latest/">readthedocs.org</a>.</p>
 
 <h2>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation:</h2>
+<a id="installation-walk-through" class="anchor" href="#installation-walk-through" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation walk-through:</h2>
 
-<p>Before you start using the project, you will need to install several
-dependencies on which the project relies in order to function properly.</p>
+<p>If you are on Ubuntu 14.04: :</p>
 
-<p>Currently, only deployment on Linux Debian/RHCP/CentOS/Fedora is
-supported because of dependencies on scientific computation packages</p>
+<pre><code>&gt; sh ubuntu_14_04_setup.sh
+&gt; pip install git+https://github.com/chiffa/BioFlow.git
+</code></pre>
 
-<p><strong>System-level packages:</strong></p>
-
-<ul>
-<li> Python 2.7.x (x86_64 )</li>
-<li> Java JDK 1.6/1.7</li>
-<li> Neo4j 1.xx You can download it from <code>the official Neo4j
-website &lt;http://neo4j.com/download/other-releases/&gt;</code><strong>. Note: if you
-want to install a 2.xx series you will also need a <code>gremlin parser
-engine &lt;https://github.com/neo4j-contrib/gremlin-plugin&gt;</code></strong>. In case
-your neo4j version fails to with a 'java heap exception', please
-considers installing a <code>frozen 1.9.6 community neo4j
-version &lt;https://github.com/chiffa/neo4j-community-1.9.6&gt;</code>__</li>
-<li> MongoDB (<code>installation instructions
-here &lt;https://docs.mongodb.org/manual/administration/install-on-linux/&gt;</code>__)</li>
-<li> LAPACK, ATLAS, BLAS (only if you are installing Scipy manually)</li>
-<li> suitesparese &amp; suitesparse-dev (needed for scikits.sparse
-compilation. if you are installing a wheel of scikits.sparse, you
-don't need them)</li>
-</ul>
-
-<p>This last step is best done via package manager:</p>
-
-<p>On <em>Debian</em>: <code>$ sudo apt-get install suitesparse suitesparse-dev</code></p>
-
-<p>On <em>Fedora</em> / <em>RHCP</em> / <em>CentOS</em>:
-<code>$ sudo yum install suitesparse suitesparse_devel</code></p>
-
-<p><strong>Packages installed via Pip:</strong></p>
-
-<p>All the Python packages are better off stored in a, so they don't
-interfere with other versions of Python present on the machine. For a
-more simple installation, you can install <code>Anaconda Python
-Distribution &lt;https://www.continuum.io/downloads&gt;</code>__, which will install
-the following packages:</p>
-
-<ul>
-<li> Cython</li>
-<li> NumPy (latest x86_64)</li>
-<li> SciPy (latest x86_64)</li>
-<li> matplotlib</li>
-<li> Sphinx (documentation build)</li>
-</ul>
-
-<p>After which, you can <code>pip install</code> the remaining packages</p>
-
-<ul>
-<li> bulbs</li>
-<li> python-Levenshtein</li>
-<li> pymongo</li>
-<li> requests</li>
-<li> scikits.sparse</li>
-<li> click</li>
-</ul>
-
-<p>Finally, I would recommend using
-<code>Gephi &lt;http://gephi.github.io/users/download/&gt;</code>__ to analyse the output
-.gdf graphs. It is very easy to use, well-supported and possess a large
-library of plug-ins.</p>
+<p>For more information, refer to the <a href="http://bioflow.readthedocs.org/en/latest/guide.html#installation-and-requirements">installation
+guide</a></p>
 
 <h2>
-<a id="datasets-used-as-backbone" class="anchor" href="#datasets-used-as-backbone" aria-hidden="true"><span class="octicon octicon-link"></span></a>Datasets used as backbone:</h2>
+<a id="usage-walk-through" class="anchor" href="#usage-walk-through" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage walk-through:</h2>
 
-<ul>
-<li> OBO 1.2 file of GO terms and relations, available at:
-<a href="http://www.geneontology.org/GO.downloads.ontology.shtml">http://www.geneontology.org/GO.downloads.ontology.shtml</a>
-</li>
-<li> UNIUPROT-SWISSPROT .txt text database file available at:
-<a href="http://www.uniprot.org/downloads">http://www.uniprot.org/downloads</a>
-</li>
-<li> Reactome.org "Events in the BioPax level 3" file, available at:
-<a href="http://www.reactome.org/download/index.html">http://www.reactome.org/download/index.html</a>
-</li>
-<li> HiNT binary interaction files for the organisms of interest, availble
-at: <a href="http://hint.yulab.org/batch.html">http://hint.yulab.org/batch.html</a>
-</li>
-<li> BioGRID ALL_ORGANISMS file in the tab2 format, available at
-<a href="http://thebiogrid.org/download.php">http://thebiogrid.org/download.php</a>
-</li>
-<li> Gene-chromosome mapping files from the Uniprot documentation:
-ftp://ftp.uniprot.org/pub/databases/uniprot/current\_release/knowledgebase/complete/docs/
-(needed only for working on aneuploidy)</li>
-<li> Organism-specific protein aboundance files, available at:
-<a href="http://pax-db.org/#!downloads">http://pax-db.org/#!downloads</a>
-</li>
-</ul>
+<p>Fire up the databases :</p>
 
-<p>You have a choice of either donwloading and these databases and
-installing them manually with respect to</p>
-
-<h2>
-<a id="basic-usage" class="anchor" href="#basic-usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Basic usage:</h2>
-
-<p>Start up the neo4j database and the MonogoDB on their default ports. If
-those ports are not available for some reason, please modify the
-<code>servers.ini</code> file in the <code>/PolyPharma/configs</code> directory. If you
-are loading a particularly large dataset into neo4j, you might need to
-adjust the configurations with which neo4j is launched</p>
-
-<p>You have a choice of using either Python binding of methods or a command
-line interface. If you installed this package with pip, your will be
-able to call the command line interfaces with</p>
-
-<p>::</p>
-
-<pre><code>&gt; truegrid command args
+<pre><code>&gt; /home/ank/neo4j-yeast/bin/neo4j start
+&gt; nohup /home/ank/mongodb/bin/mongod &amp;
 </code></pre>
 
-<p>Otherwise, you can access them with</p>
+<p>Setup environment :</p>
 
-<p>::</p>
-
-<pre><code>&gt; python CLUI.py command args
+<pre><code>&gt; bioflow initialize --/home/ank/data_store
+&gt; bioflow downloaddbs
+&gt; bioflow setorg yeast
+&gt; bioflow loadneo4j
 </code></pre>
 
-<p>when you are executing the command lines by using Python bindings, don't
-forget to add the <code>-m</code> argument between <code>Python</code> and the location of
-the command you are issuing.</p>
+<p>For more information about data and config files, refer to the <a href="http://bioflow.readthedocs.org/en/latest/guide.html#data-and-databases-setup">data and
+database
+guide</a></p>
 
-<p>::</p>
+<p>Set the set of perturbed proteins on which we would want to base our
+analysis :</p>
 
-<pre><code>&gt; Python -m PolyPharma.module.command
+<pre><code>&gt; bioflow setsource /home/ank/source_data/perturbed_proteins_ids.csv
 </code></pre>
 
-<p>Downloading the datasets:</p>
+<p>Build network interfaces :</p>
 
-<pre><code>
-*Database creation*
-
-Create the configuration files containing the data:
-
-::
-
-    &gt; python CLUI.py initialize --path myfolder --neo4jserver http://localhost:7474 --mongoserver mongodb://localhost:27017/
-
-    &gt; python -m PolyPharma.Utils.ConfigsIO.set_folders()
-
-Download the databases:
-
-::
-
-    &gt; python CLUI.py downloaddbs
-
-    &gt; python -m PolyPharma.Utils.ConfigsIO.StructureGenerator.pull_online_DBs()
-
-For now, the syustem will download all the required files, then fail
-when trying to download 'ABOUNDANCE' file class.
-
-Create the proper configuration file for the desired organism
-
-::
-
-    &gt; python CLUI.py setorgconfs --organism [mouse, human, yeast]
-
-    &gt; python - m PolyPharma.Utils.ConfigsIO.build_source_config('yeast')
-
-Alternatively all of the above can be executed (for yeast),
-
-::
-
-    &gt; python- m PolyPharma.Utils.ConfigsIO 
-
-Provided that Uniprot.dat is a rather big file (~3 Gb as of late 2015),
-it might get broken on the download and you might want to check that it
-is a correct size
-
-Building the database:
+<pre><code>&gt; bioflow extractmatrix --interactome
+&gt; bioflow extractmatrix --annotome
 </code></pre>
 
-<p>If you are using the application for the first time on your computer,
-you will need to load all the data that is contained in the datastore
-files you've donwloaded previously and cross-reference them</p>
+<p>Perform the analysis:</p>
 
-<p>::</p>
-
-<pre><code>&gt; Python -m PolyPharma.neo4j_Importers.Import_commander
-
-&gt; python CLUI.py loadneo4j
+<pre><code>&gt; bioflow analyze --matrix interactome --depth 24 --processors 4
+&gt; bioflow analyze --matrix annotome --depth 24 --processors 4
 </code></pre>
 
-<p>Accessing low-level structure of the interactome:</p>
+<p>The results of analysis will be available in the output folder, and
+printed out to the standard output.</p>
 
-<pre><code>
-Export the organism-specific interactome or concept-entity relationships
-as a Python-Scipy sparse matrix object:
-
-::
-
-    &gt; python CLUI.py extractmatrix --interactome/--annotmap &gt; path to a picke dump of the sparse matrix and name map
-
-    &gt; python -m 
-
-Map a list of heterogeneous identifiers to the database-specific ids:
-
-::
-
-    &gt; python CLUI.py mapids /path/to/my.input.file.tsv &gt; path/to/my.output.file
-
-    &gt; python -m
-
-High-level analysis:
-</code></pre>
-
-<p>Indicate the file to use in the <code>PolyPharma/configs.py</code> folder as the
-RNA_source variable Configure the expected counts groups and desired
-intergroup comparisons in the
-<code>PolyPharma/PreProcessing/RNA_counts_parser.py</code> folder</p>
-
-<p>::</p>
-
-<pre><code>&gt; Python -m PolyPharma.PreProcessing.RNA_counts_parser
-</code></pre>
-
-<p>Now, call the auto-analyze routines for the annotation analysis or
-interactome analysis:</p>
-
-<p>::</p>
-
-<pre><code>&gt; Python -m PolyPharma.neo4j_analyzer.knowledge_access_analysis
-
-&gt; Python -m PolyPharma.neo4j_analyzer.interactome_analysis
-</code></pre>
-
-<p>Analyze a list of genes with an optional background:</p>
-
-<p>::</p>
-
-<pre><code>&gt; python CLUI.py analyze --interactome/--annotmap --background /path/to/background.input.file --depth 20 --processors 2 path/to/hits.input.file
-</code></pre>
-
-<p>The resulting significance data can be seen as the output and the
-related analyzis .gdf files can be found in the /outputs folder.</p>
-
-<p>Full API documentation of underlying libraries is available at
-<code>readthedocs.org &lt;http://polypharma.readthedocs.org/%20RTFD&gt;</code>__</p>
-
-<h2>
-<a id="future-developments" class="anchor" href="#future-developments" aria-hidden="true"><span class="octicon octicon-link"></span></a>Future developments:</h2>
-
-<p>Please see the developper log below!</p>
-
-<p>.. |License Type| image:: <a href="https://img.shields.io/badge/license-BSD3-blue.svg">https://img.shields.io/badge/license-BSD3-blue.svg</a>
-   :target: <a href="https://github.com/chiffa/BioFlow/blob/master/License-new_BSD.txt">https://github.com/chiffa/BioFlow/blob/master/License-new_BSD.txt</a>
-.. |Build Status| image:: <a href="https://travis-ci.org/chiffa/BioFlow.svg?branch=master">https://travis-ci.org/chiffa/BioFlow.svg?branch=master</a>
-   :target: <a href="https://travis-ci.org/chiffa/BioFlow">https://travis-ci.org/chiffa/BioFlow</a>
-.. |Coverage Status| image:: <a href="https://coveralls.io/repos/chiffa/BioFlow/badge.svg?branch=master&amp;service=github">https://coveralls.io/repos/chiffa/BioFlow/badge.svg?branch=master&amp;service=github</a>
-   :target: <a href="https://coveralls.io/github/chiffa/BioFlow?branch=master">https://coveralls.io/github/chiffa/BioFlow?branch=master</a>
-.. |Branch status| image:: <a href="https://img.shields.io/badge/branch_status-refactoring-red.svg">https://img.shields.io/badge/branch_status-refactoring-red.svg</a>
-   :target: <a href="https://github.com/chiffa/BioFlow/blob/master/README.md">https://github.com/chiffa/BioFlow/blob/master/README.md</a>
-.. |Code Issues| image:: <a href="https://www.quantifiedcode.com/api/v1/project/1c3f8cd001a44319abddab249101b646/badge.svg">https://www.quantifiedcode.com/api/v1/project/1c3f8cd001a44319abddab249101b646/badge.svg</a>
-   :target: <a href="https://www.quantifiedcode.com/app/project/1c3f8cd001a44319abddab249101b646">https://www.quantifiedcode.com/app/project/1c3f8cd001a44319abddab249101b646</a>
-.. |Duplicate Lines| image:: <a href="https://img.shields.io/badge/duplicate%20lines-17.66%25-yellow.svg">https://img.shields.io/badge/duplicate%20lines-17.66%25-yellow.svg</a>
-   :target: <a href="http://clonedigger.sourceforge.net/">http://clonedigger.sourceforge.net/</a></p>
+<p>For more details or usage as a library, refer to the <a href="http://bioflow.readthedocs.org/en/latest/guide.html#basic-usage">usage
+guide</a>.</p>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/chiffa">chiffa</a></p>
