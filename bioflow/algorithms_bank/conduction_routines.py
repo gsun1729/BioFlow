@@ -191,7 +191,10 @@ def master_edge_current(conductivity_laplacian, index_list,
     :param memoization:
     :return:
     """
-    # TODO: remove memoization in order to reduce overhead nad mongo database load
+    # TODO: remove memoization in order to reduce overhead and mongo database load
+    # TODO: add a second index_list where the list of pairs will be generated
+    #       Question: how are we going to deal with lists that have nodes that link to themselves?
+    #       should we iterate over the list to eliminate them all together again?
 
     # generate index list in agreement with the sampling strategy
     if sampling:
@@ -203,6 +206,8 @@ def master_edge_current(conductivity_laplacian, index_list,
                                  idx_list_c[len(idx_list_c) / 2:])
     else:
         list_of_pairs = [(i, j) for i, j in combinations(set(index_list), 2)]
+        # TODO: profile to see how heavy this application is and if we could simplify it by using
+        #  a jit-compiled generator
 
     total_pairs = len(list_of_pairs)
 
@@ -349,7 +354,6 @@ def perform_clustering(inter_node_tension, cluster_number, show='undefined clust
 
     # underlying method is spectral clustering: do we really lie in a good zone for that?
     groups = cluster_nodes(relations_matrix, cluster_number)
-
 
     relations_matrix = normalize_laplacian(relations_matrix)
     eigenvals, _ = eigsh(relations_matrix)
