@@ -90,15 +90,6 @@ class ConductionRoutinesTester(unittest.TestCase):
         calc_m = cr.laplacian_reachable_filter(self.test_laplacian, (0, 2)).toarray()
         self.assertTrue(np.mean(np.abs(calc_m - chm)) < 1e-9)
 
-    def test_current_with_reach_limitations(self):
-        calc_m, current = cr.group_edge_current_with_limitations(self.test_laplacian,
-                                                                 (0, 2),
-                                                                 reach_limiter=[0, 2])
-        chm = np.zeros((4, 4))
-        chm[0, 2] = -1
-        calc_m = calc_m.toarray()
-        self.assertTrue(np.mean(np.abs(calc_m - chm)) < 1e-9)
-
 
 if __name__ == "__main__":
     unittest.main()

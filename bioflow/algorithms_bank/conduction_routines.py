@@ -180,8 +180,9 @@ def edge_current_iteration(conductivity_laplacian, index_pair,
 def master_edge_current(conductivity_laplacian, index_list,
                         second_index_list=None,
                         sampling=False, sampling_fraction=0.1,
-                        reach_limiter=None,  # TODO: we actually need UP2GO_reach_nodes dict here
-                        cancellation=True, potential_dominated=True,):
+                        reach_limiter_index=None,
+                        # dict here
+                        cancellation=True, potential_dominated=True, ):
     """
     master method for all the required edge current calculations
 
@@ -192,7 +193,7 @@ def master_edge_current(conductivity_laplacian, index_list,
     :param cancellation:
     :param potential_dominated:
     :param sampling:
-    :param reach_limiter:
+    :param reach_limiter_index:
     :return: current_accumulator, up_pair_2_voltage_current_dict
     """
     if not second_index_list:
@@ -219,8 +220,8 @@ def master_edge_current(conductivity_laplacian, index_list,
         if counter % total_pairs/100 == 0:
             log.debug('getting pairwise flow %s out of %s', counter + 1, total_pairs)
 
-        if reach_limiter:
-            # TODO: Reach needs to be computed here
+        if reach_limiter_index:
+            reach_limiter = [i, j] + reach_limiter_index[i] + reach_limiter_index[j]
             potential_diff, current_upper = \
                 edge_current_iteration(conductivity_laplacian, (i, j),
                                        reach_limiter=reach_limiter)
@@ -249,24 +250,6 @@ def master_edge_current(conductivity_laplacian, index_list,
         current_accumulator /= total_pairs
 
     return current_accumulator, up_pair_2_voltage_current_dict
-
-
-# TODO: REFACTORING: inline into the master_edge_current
-def group_edge_current_with_limitations(inflated_laplacian, idx_pair, reach_limiter):
-    """
-    Recovers the current passing through a conduction system while enforcing the limitation
-    on the directionality of induction of the GO terms
-
-    :param inflated_laplacian: Laplacian containing the UP-GO relations in addition to
-    purely GO-GO relations
-    :param idx_pair: pair of indexes between which we want to compute the information flow
-    :param reach_limiter: list of indexes to which we want to limit the reach
-    :return:
-    """
-    inverter = edge_current_iteration(inflated_laplacian, idx_pair,
-                                      reach_limiter=reach_limiter)
-
-    return inverter[1] / inverter[0], inverter[0]
 
 
 def perform_clustering(inter_node_tension, cluster_number, show='undefined clustering'):

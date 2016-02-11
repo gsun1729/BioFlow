@@ -775,16 +775,16 @@ class InteractomeInterface(object):
             computing sparsity_fraction association with other randomly chosen nodes
         :return: adjusted conduction system
         """
+        # TODO: self.entry_point_uniprots_bulbs_ids is the source of the samples. It needs to be
+        # corrected before we can run two-group analysis
+
         if not incremental or self.current_accumulator == np.zeros((2, 2)):
             self.current_accumulator = lil_matrix(self.laplacian_matrix.shape)
             self.UP2UP_voltages = {}
             self.node_current = defaultdict(float)
 
-        # TODO: self.entry_point_uniprots_bulbs_ids is the source of the samples. It needs to be
-        # corrected before we can run two-group analysis
-
-        up_matrix_indexes = [self.bulbs_id_2_matrix_index[UP]
-                             for UP in self.entry_point_uniprots_bulbs_ids]
+        up_matrix_indexes = [self.bulbs_id_2_matrix_index[up]
+                             for up in self.entry_point_uniprots_bulbs_ids]
 
         if sparsity_fraction:
             current_accumulator, up_pair_2_voltage_current = cr.master_edge_current(
@@ -794,7 +794,7 @@ class InteractomeInterface(object):
                 sampling_fraction=sparsity_fraction,
                 cancellation=cancellation)
         else:
-            current_accumulator, up_pair_2_voltage_current =cr.master_edge_current(
+            current_accumulator, up_pair_2_voltage_current = cr.master_edge_current(
                 self.laplacian_matrix,
                 up_matrix_indexes,
                 cancellation=cancellation)

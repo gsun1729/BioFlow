@@ -120,7 +120,7 @@ class GeneOntologyInterface(object):
 
         self.inflated_Laplacian = np.zeros((2, 2))
         self.inflated_matrix_index_2_bulbs_id = {}
-        self.inflated_lbl2idx = {}
+        self.inflated_matrix_label_2_matrix_index = {}
         self.binding_intensity = 0
 
         self.analytic_uniprots = []
@@ -227,12 +227,12 @@ class GeneOntologyInterface(object):
             Dumps.GO_Inflated,
             (self.inflated_Laplacian,
              self.inflated_matrix_index_2_bulbs_id,
-             self.inflated_lbl2idx,
+             self.inflated_matrix_label_2_matrix_index,
              self.binding_intensity))
 
     def undump_inflated_elements(self):
         self.inflated_Laplacian, self.inflated_matrix_index_2_bulbs_id, \
-            self.inflated_lbl2idx, self.binding_intensity = \
+            self.inflated_matrix_label_2_matrix_index, self.binding_intensity = \
             undump_object(Dumps.GO_Inflated)
 
     def dump_memoized(self):
@@ -680,8 +680,8 @@ class GeneOntologyInterface(object):
                 self.inflated_Laplacian[
                     up2idxs[uniprot], self.GO2Num[go_term]] -= self.binding_intensity
 
-        self.inflated_lbl2idx = copy(self.GO2Num)
-        self.inflated_lbl2idx.update(up2idxs)
+        self.inflated_matrix_label_2_matrix_index = copy(self.GO2Num)
+        self.inflated_matrix_label_2_matrix_index.update(up2idxs)
         self.inflated_matrix_index_2_bulbs_id = copy(self.Num2GO)
         self.inflated_matrix_index_2_bulbs_id.update(idx2ups)
 
@@ -703,10 +703,7 @@ class GeneOntologyInterface(object):
         self.analytic_uniprots = [
             uniprot for uniprot in uniprots if uniprot in self.UP2GO_Dict.keys()]
 
-    # TODO: REFACTORING: a lot of elements from this function is embedded in the
-    # cr.master_edge_current
-    # TODO: remove sourced and memoized
-    # TODO: CRITICAL: escalate sparse_fraction all the way up where the number is decided!
+    # TODO: CRITICAL: backtrack sparse_fraction all the way up where the number is decided!
     def build_extended_conduction_system(
             self,
             memoized=True,
@@ -731,72 +728,63 @@ class GeneOntologyInterface(object):
         :type sparse_fraction: float
         :return: adjusted conduction system
         """
-        # build_extended_conduction_system #######################################
-        if not incremental or self.current_accumulator == np.zeros((2, 2)):
-            self.current_accumulator = lil_matrix(self.inflated_Laplacian.shape)
-            self.UP2UP_voltages = {}
-            # self.node_current = defaultdict(float)
-
         # TODO: self.analytic_uniprots is the source of the samples. It needs to be corrected
         # before we can run two-group analysis
 
-        # TODO: add index conversion list iterator. source = analytic uniprots
-        # TODO: rename analytic_uniprots to entry_point_bulbs_ids
-        ##########################################################################
+        if not incremental or self.current_accumulator == np.zeros((2, 2)):
+            self.current_accumulator = lil_matrix(self.inflated_Laplacian.shape)
+            self.UP2UP_voltages = {}
+            self.node_current = defaultdict(float)
 
-        # supported by master_edge_current #######################################
-        iterator = []
+        up_2_go_reach_matrix_indexes = dict([
+            (self.inflated_matrix_label_2_matrix_index[up],
+             [self.inflated_matrix_label_2_matrix_index[go] for go in go_list])
+            for up, go_list in self.UP2GO_Reachable_nodes.iteritems()])
+
+        up_matrix_indexes = [self.inflated_matrix_label_2_matrix_index[up]
+                             for up in self.analytic_uniprots]
+
         if sparse_fraction:
-            for _ in range(0, sparse_fraction):
-                _length = copy(self.analytic_uniprots)
-                random.shuffle(_length)
-                iterator += zip(_length[:len(_length) / 2], _length[len(_length) / 2:])
-                self.uncomplete_compute = True  # TODO: THIS ONE IS  NEW!
+            current_accumulator, up_pair_2_voltage_current = cr.master_edge_current(
+                self.inflated_Laplacian,
+                up_matrix_indexes,
+                reach_limiter_index=up_2_go_reach_matrix_indexes,
+                sampling=True,
+                sampling_fraction=sparse_fraction,
+                cancellation=cancellation)
         else:
-            iterator = combinations(self.analytic_uniprots, 2)
-        ######################################################################
+            current_accumulator, up_pair_2_voltage_current = cr.master_edge_current(
+                self.inflated_Laplacian,
+                up_matrix_indexes,
+                reach_limiter_index=up_2_go_reach_matrix_indexes,
+                cancellation=cancellation)
 
-        for UP1, UP2 in iterator:
+            self.UP2UP_voltages.update(
+                dict(((self.inflated_matrix_index_2_bulbs_id[pair[0]],
+                       self.inflated_matrix_index_2_bulbs_id[pair[1]]),
+                      voltage)
+                     for pair, (voltage, current) in up_pair_2_voltage_current.iteritems()))
 
-            idx1, idx2 = (self.inflated_lbl2idx[UP1], self.inflated_lbl2idx[UP2])
+        if incremental:
+            self.current_accumulator = self.current_accumulator + current_accumulator
+        else:
+            self.current_accumulator = current_accumulator
 
-            pre_reach = self.UP2GO_Reachable_nodes[UP1] + \
-                self.UP2GO_Reachable_nodes[UP2] + [UP1] + [UP2]
-
-            reach = [self.inflated_lbl2idx[label] for label in pre_reach]
-            # TODO: reach conversion to indexes is done here => we need to pre-translate indexes
-
-            current_upper, voltage_diff = cr.group_edge_current_with_limitations(
-                inflated_laplacian=self.inflated_Laplacian,
-                idx_pair=(idx1, idx2),
-                reach_limiter=reach)
-
-            self.current_accumulator = self.current_accumulator +\
-                cr.sparse_abs(current_upper)
-
-            self.UP2UP_voltages[(UP1, UP2)] = voltage_diff
-
-            if memoized:
-                self.uniprots_2_voltage_and_circulation[
-                    tuple(sorted((UP1, UP2)))] = \
-                    (voltage_diff, current_upper)
-
-        if cancellation:  # TODO: factor that one into the Conduction Routilens
-            ln = len(self.analytic_uniprots)
-            self.current_accumulator /= (ln * (ln - 1) / 2)
-
-        # build_extended_conduction_system #######################################
-
-        # BUG: NO SUPPORT FOR INCREMENTAL
         if memoized:
+            self.uniprots_2_voltage_and_circulation.update(
+                dict(((self.inflated_matrix_index_2_bulbs_id[pair[0]],
+                       self.inflated_matrix_index_2_bulbs_id[pair[1]]),
+                      (voltage, current))
+                     for pair, (voltage, current) in up_pair_2_voltage_current.iteritems()))
+
             self.dump_memoized()
 
         index_current = cr.get_current_through_nodes(self.current_accumulator)
 
-        # BUG: NO SUPPORT FOR INCREMENTAL UPDATE
-        self.node_current = dict((self.inflated_matrix_index_2_bulbs_id[idx], val)
-                                 for idx, val in enumerate(index_current))
-        ##########################################################################
+        self.node_current.update(
+            dict((self.inflated_matrix_index_2_bulbs_id[idx], val)
+                 for idx, val in enumerate(index_current)))
+
 
     def format_node_props(self, node_current, limit=0.01):
         """
@@ -867,7 +855,7 @@ class GeneOntologyInterface(object):
             node_properties_dict=char_dict,
             min_current=0.01,
             index_2_label=self.inflated_matrix_index_2_bulbs_id,
-            label_2_index=self.inflated_lbl2idx,
+            label_2_index=self.inflated_matrix_label_2_matrix_index,
             current_matrix=self.current_accumulator)
         gdf_exporter.write()
 
