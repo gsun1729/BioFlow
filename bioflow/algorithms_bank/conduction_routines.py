@@ -5,8 +5,6 @@ IO current arrays.
 import random
 from copy import copy
 import numpy as np
-from itertools import combinations, repeat
-from itertools import chain
 from scipy.sparse import csc_matrix, diags, triu, lil_matrix
 from scipy.sparse.linalg import eigsh
 # noinspection PyUnresolvedReferences
@@ -309,3 +307,6 @@ def perform_clustering(inter_node_tension, cluster_number, show='undefined clust
         remainder, \
         mean_corr_array, \
         eigenvals
+
+# TODO: CRITICAL: Next step: modify knowledge_analysis and molecular_network_analysis
+# to support two sets of proteins for circulation computation.
