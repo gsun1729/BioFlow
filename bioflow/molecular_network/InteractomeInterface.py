@@ -749,17 +749,16 @@ class InteractomeInterface(object):
     # critical control parameters:
     #   - memoized => dismiss
     #   - sourced => dismiss
-    #   - incremental => to be kept. So taht we can calculate the bacground even better
+    #   - incremental => to be kept. So that we can calculate the background even better
     #   - cancellation => to be kept
     #   - sparse_samples => to be kept
     #   - factor in the sampling run into this
     def build_extended_conduction_system(
             self,
             memoized=True,
-            sourced=False,
             incremental=False,
             cancellation=True,
-            sparse_samples=False):
+            sparsity_fraction=False):
         """
         Builds a conduction matrix that integrates uniprots, in order to allow an easier
         knowledge flow analysis
@@ -767,42 +766,39 @@ class InteractomeInterface(object):
         :param bool memoized: if the tensions and individual relation matrices should be
             stored in the matrix and dumped at the end computation (required for submatrix
             re-computation)
-        :param bool sourced: if true, all the relations will be looked up and not computed.
-            Useful for the retrieval of sub-circulation group, but requires the
-            uniprots_2_voltage_and_circulation to be pre-filled
         :param bool incremental: if True, all the circulation computation will be added to the
             existing ones. Useful for the computation of particularly big systems with
             intermediate dumps
         :param bool cancellation: divides the final current by number of bioflow-sink pairs
-        :param int sparse_samples: if set to an integer the sampling will be sparse and not dense,
+        :param int sparsity_fraction: if set to an integer the sampling will be sparse and not dense,
             i.e. instead of computation for each node pair, only an estimation will be made, equal to
-            computing sparse_samples association with other randomly chosen nodes
+            computing sparsity_fraction association with other randomly chosen nodes
         :return: adjusted conduction system
         """
         if not incremental or self.current_accumulator == np.zeros((2, 2)):
             self.current_accumulator = lil_matrix(self.laplacian_matrix.shape)
             self.UP2UP_voltages = {}
             self.node_current = defaultdict(float)
-            if not sourced:
-                self.uniprots_2_voltage_and_circulation = {}
 
-        if sparse_samples:
-            current_accumulator = cr.sample_group_edge_current(
+        # TODO: self.entry_point_uniprots_bulbs_ids is the source of the samples. It needs to be
+        # corrected before we can run two-group analysis
+
+        up_matrix_indexes = [self.bulbs_id_2_matrix_index[UP]
+                             for UP in self.entry_point_uniprots_bulbs_ids]
+
+        if sparsity_fraction:
+            current_accumulator, up_pair_2_voltage_current = cr.master_edge_current(
                 self.laplacian_matrix,
-                [
-                    self.bulbs_id_2_matrix_index[UP] for UP in self.entry_point_uniprots_bulbs_ids],
-                re_samples=sparse_samples,
+                up_matrix_indexes,
+                sampling=True,
+                sampling_fraction=sparsity_fraction,
                 cancellation=cancellation)
         else:
-            current_accumulator, up_pair_2_voltage_current =\
-                cr.group_edge_current_memoized(
-                    self.laplacian_matrix,
-                    [self.bulbs_id_2_matrix_index[UP]
-                     for UP in self.entry_point_uniprots_bulbs_ids],
-                    cancellation=cancellation,
-                    # memoized=memoized,
-                    memory_source=self.uniprots_2_voltage_and_circulation)
-            # self.uniprots_2_voltage_and_circulation.update(up_pair_2_voltage_current)
+            current_accumulator, up_pair_2_voltage_current =cr.master_edge_current(
+                self.laplacian_matrix,
+                up_matrix_indexes,
+                cancellation=cancellation)
+
             self.UP2UP_voltages.update(
                 dict((pair, voltage)
                      for pair, (voltage, current) in up_pair_2_voltage_current.iteritems()))
@@ -817,11 +813,10 @@ class InteractomeInterface(object):
 
         index_current = cr.get_current_through_nodes(self.current_accumulator)
         log.info('current accumulator shape %s', current_accumulator.shape)
+
         self.node_current.update(
-            dict(
-                (self.matrix_index_2_bulbs_id[idx],
-                 val) for idx,
-                val in enumerate(index_current)))
+            dict((self.matrix_index_2_bulbs_id[idx], val)
+                 for idx, val in enumerate(index_current)))
 
     def format_node_props(self, node_current, limit=0.01):
         """
@@ -894,27 +889,6 @@ class InteractomeInterface(object):
             current_matrix=self.current_accumulator)
         gdf_exporter.write()
 
-    def export_subsystem(self, uniprot_system, uniprot_subsystem):
-        """
-        Exports the subsystem of reached_uniprots_bulbs_id_list and circulation between
-         them based on a larger precalculated system.This is possible only of the memoization
-         parameter was on during the execution of "build_extended_circulation_system()"
-        function execution.
-
-        :param uniprot_system: The set of uniprots for which the larger system was calculated
-        :param uniprot_subsystem: the set of reached_uniprots_bulbs_id_list we are interested in
-        :raise Exception: if the set of uniprots for which the larger system was calculated
-         doesn't correspond to what is stored in the dumps
-        """
-        current_recombinator = self.undump_memoized()
-        if not set(uniprot_system) == set(
-                pickle.loads(current_recombinator['UPs'])):
-            raise Exception('Wrong UP system re-analyzed')
-        self.uniprots_2_voltage_and_circulation = pickle.loads(
-            current_recombinator['voltages'])
-        self.set_uniprot_source(uniprot_subsystem)
-        self.build_extended_conduction_system(memoized=False, sourced=True)
-        self.export_conduction_system()
 
     # TODO: remove memoization: it is not really used anywhere
     # parameters to remove:
@@ -963,7 +937,7 @@ class InteractomeInterface(object):
                 analytics_uniprot_list = self.connected_uniprots[:sample_size]
                 self.set_uniprot_source(analytics_uniprot_list)
                 self.build_extended_conduction_system(
-                    memoized=memoized, sourced=False, sparse_samples=sparse_rounds)
+                    memoized=memoized, sparsity_fraction=sparse_rounds)
 
                 md5 = hashlib.md5(
                     json.dumps(

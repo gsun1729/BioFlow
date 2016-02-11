@@ -528,7 +528,7 @@ def auto_analyze(source=None, go_interface_instance=None, processors=3, desired_
                                    sparse_rounds=sampling_depth,
                                    go_interface_instance=None)
 
-            go_interface_instance.build_extended_conduction_system(sparse_samples=sampling_depth)
+            go_interface_instance.build_extended_conduction_system(sparse_fraction=sampling_depth)
             # go_interface_instance.export_conduction_system()
             nr_nodes, nr_groups = compare_to_blank(
                 len(go_interface_instance.analytic_uniprots),

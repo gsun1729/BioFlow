@@ -426,9 +426,9 @@ def auto_analyze(source_list, desired_depth=24, processors=4, background_list=No
                 p_val=0.9, interactome_interface_instance=interactome_interface)
         else:
 
-            sampling_depth = max(200 ** 2 /
-                                 len(interactome_interface.entry_point_uniprots_bulbs_ids),
-                                 5)
+            node_pool_size = len(interactome_interface.entry_point_uniprots_bulbs_ids)
+            sampling_depth = max(200 ** 2 / node_pool_size,5)
+            sampling_depth = float(sampling_depth) / (node_pool_size * (node_pool_size - 1))
 
             if not skip_sampling:
                 log.info('length: %s \t sampling depth: %s \t, estimated round time: %s min',
@@ -443,7 +443,7 @@ def auto_analyze(source_list, desired_depth=24, processors=4, background_list=No
                                    sparse_rounds=sampling_depth,
                                    interactome_interface_instance=None)
 
-            interactome_interface.build_extended_conduction_system(sparse_samples=sampling_depth)
+            interactome_interface.build_extended_conduction_system(sparsity_fraction=sampling_depth)
             # interactome_interface.export_conduction_system()
             nr_nodes, nr_groups = compare_to_blank(
                 len(interactome_interface.entry_point_uniprots_bulbs_ids),

@@ -1,6 +1,12 @@
 TODOs for the project in the future:
 ====================================
 
+TODO types:
+    - CRITICAL: without it being cleared the code is unstable
+    - PERFORMANCE: potential peformance gain
+    - REFACTORING: improvement of structure
+    - FEATURE: refactoring required for the current feature branch
+
 Confirmed minor refactoring requiring a sane rollback:
 ------------------------------------------------------
 
@@ -44,6 +50,14 @@ New features:
 
 -  write the circulation files so that it is possible to calculate the information circulation
     between two sets or as set and a single protein (application for p53 and PKD1 regulators)
+
+-  distinction between downstream and upstream targets can be implemented by translating the
+    directed graph into an associated Markov transition matrix. This will allow to:
+        - explicitly allow ponderation of importance of sources/sinks of information
+        - account only for the information propagating downstream the pathways, not both ways as
+        it is the case now
+        - synchronious computation of the flow for all sources/sinks
+
 
 Structure-required refactoring:
 -------------------------------
@@ -135,6 +149,9 @@ Good-to-have; non-critical:
 -  In case we are calling time-consuming parsers from several location,
    we might want to insert "singleton" module into the block, that
    performs all the parsings only once per program run.
+
+verify it works with the pre-0.3 branch of scikits-sparse: https://github.com/njsmith/scikits-sparse
+.git
 
 
 Documentation and description:

@@ -119,7 +119,7 @@ class GeneOntologyInterface(object):
         # mongoDB
 
         self.inflated_Laplacian = np.zeros((2, 2))
-        self.inflated_idx2lbl = {}
+        self.inflated_matrix_index_2_bulbs_id = {}
         self.inflated_lbl2idx = {}
         self.binding_intensity = 0
 
@@ -226,12 +226,12 @@ class GeneOntologyInterface(object):
         dump_object(
             Dumps.GO_Inflated,
             (self.inflated_Laplacian,
-             self.inflated_idx2lbl,
+             self.inflated_matrix_index_2_bulbs_id,
              self.inflated_lbl2idx,
              self.binding_intensity))
 
     def undump_inflated_elements(self):
-        self.inflated_Laplacian, self.inflated_idx2lbl, \
+        self.inflated_Laplacian, self.inflated_matrix_index_2_bulbs_id, \
             self.inflated_lbl2idx, self.binding_intensity = \
             undump_object(Dumps.GO_Inflated)
 
@@ -682,8 +682,8 @@ class GeneOntologyInterface(object):
 
         self.inflated_lbl2idx = copy(self.GO2Num)
         self.inflated_lbl2idx.update(up2idxs)
-        self.inflated_idx2lbl = copy(self.Num2GO)
-        self.inflated_idx2lbl.update(idx2ups)
+        self.inflated_matrix_index_2_bulbs_id = copy(self.Num2GO)
+        self.inflated_matrix_index_2_bulbs_id.update(idx2ups)
 
     def set_uniprot_source(self, uniprots):
         """
@@ -703,13 +703,16 @@ class GeneOntologyInterface(object):
         self.analytic_uniprots = [
             uniprot for uniprot in uniprots if uniprot in self.UP2GO_Dict.keys()]
 
+    # TODO: REFACTORING: a lot of elements from this function is embedded in the
+    # cr.master_edge_current
+    # TODO: remove sourced and memoized
+    # TODO: CRITICAL: escalate sparse_fraction all the way up where the number is decided!
     def build_extended_conduction_system(
             self,
             memoized=True,
-            sourced=False,
             incremental=False,
             cancellation=True,
-            sparse_samples=False):
+            sparse_fraction=False):
         """
         Builds a conduction matrix that integrates uniprots, in order to allow an easier
         knowledge flow analysis
@@ -717,52 +720,57 @@ class GeneOntologyInterface(object):
 
         :param memoized: if the tensions and individual relation matrices should be stored in
          the matrix and dumped at the end computation (required for submatrix re-computation)
-        :param sourced: if true, all the relations will be looked up and not computed. Useful
-        for the retrieval of sub-circulation group, but requires the
-        uniprots_2_voltage_and_circulation to be pre-filled
         :param incremental: if True, all the circulation computation will be added to the
         existing ones. Useful for the computation of particularly big systems with
         intermediate dumps
         :param cancellation: divides the final current by #Nodes**2/2, i.e. makes the currents
         comparable between circulation systems of different  sizes.
-        :param sparse_samples: if set to an integer the sampling will be sparse and not dense,
+        :param sparse_fraction: if set to an integer the sampling will be sparse and not dense,
          i.e. instead of computation for each node pair, only an estimation will be made, equal to
-         computing sparse_samples association with other randomly chosen nodes
-        :type sparse_samples: int
+         computing sparse_fraction association with other randomly chosen nodes
+        :type sparse_fraction: float
         :return: adjusted conduction system
         """
+        # build_extended_conduction_system #######################################
         if not incremental or self.current_accumulator == np.zeros((2, 2)):
             self.current_accumulator = lil_matrix(self.inflated_Laplacian.shape)
             self.UP2UP_voltages = {}
-            if not sourced:
-                self.uniprots_2_voltage_and_circulation = {}
+            # self.node_current = defaultdict(float)
 
+        # TODO: self.analytic_uniprots is the source of the samples. It needs to be corrected
+        # before we can run two-group analysis
+
+        # TODO: add index conversion list iterator. source = analytic uniprots
+        # TODO: rename analytic_uniprots to entry_point_bulbs_ids
+        ##########################################################################
+
+        # supported by master_edge_current #######################################
         iterator = []
-        if sparse_samples:
-            for _ in range(0, sparse_samples):
+        if sparse_fraction:
+            for _ in range(0, sparse_fraction):
                 _length = copy(self.analytic_uniprots)
                 random.shuffle(_length)
                 iterator += zip(_length[:len(_length) / 2], _length[len(_length) / 2:])
-                self.uncomplete_compute = True
+                self.uncomplete_compute = True  # TODO: THIS ONE IS  NEW!
         else:
             iterator = combinations(self.analytic_uniprots, 2)
+        ######################################################################
 
         for UP1, UP2 in iterator:
 
-            if sourced:
-                self.current_accumulator = self.current_accumulator + \
-                    cr.sparse_abs(self.uniprots_2_voltage_and_circulation[
-                                  tuple(sorted((UP1, UP2)))][1])
-                continue
-
             idx1, idx2 = (self.inflated_lbl2idx[UP1], self.inflated_lbl2idx[UP2])
+
             pre_reach = self.UP2GO_Reachable_nodes[UP1] + \
                 self.UP2GO_Reachable_nodes[UP2] + [UP1] + [UP2]
+
             reach = [self.inflated_lbl2idx[label] for label in pre_reach]
+            # TODO: reach conversion to indexes is done here => we need to pre-translate indexes
+
             current_upper, voltage_diff = cr.group_edge_current_with_limitations(
                 inflated_laplacian=self.inflated_Laplacian,
                 idx_pair=(idx1, idx2),
                 reach_limiter=reach)
+
             self.current_accumulator = self.current_accumulator +\
                 cr.sparse_abs(current_upper)
 
@@ -777,14 +785,18 @@ class GeneOntologyInterface(object):
             ln = len(self.analytic_uniprots)
             self.current_accumulator /= (ln * (ln - 1) / 2)
 
+        # build_extended_conduction_system #######################################
+
+        # BUG: NO SUPPORT FOR INCREMENTAL
         if memoized:
             self.dump_memoized()
 
         index_current = cr.get_current_through_nodes(self.current_accumulator)
-        self.node_current = dict(
-            (self.inflated_idx2lbl[idx],
-             val) for idx,
-            val in enumerate(index_current))
+
+        # BUG: NO SUPPORT FOR INCREMENTAL UPDATE
+        self.node_current = dict((self.inflated_matrix_index_2_bulbs_id[idx], val)
+                                 for idx, val in enumerate(index_current))
+        ##########################################################################
 
     def format_node_props(self, node_current, limit=0.01):
         """
@@ -854,32 +866,10 @@ class GeneOntologyInterface(object):
             field_types=node_char_types,
             node_properties_dict=char_dict,
             min_current=0.01,
-            index_2_label=self.inflated_idx2lbl,
+            index_2_label=self.inflated_matrix_index_2_bulbs_id,
             label_2_index=self.inflated_lbl2idx,
             current_matrix=self.current_accumulator)
         gdf_exporter.write()
-
-    def export_subsystem(self, uniprot_system, uniprot_subsystem):
-        """
-        Exports the subsystem of reached_uniprots_bulbs_id_list and circulation between
-        them based on a larger precalculated system.This is possible only of the memoization
-        parameter was on during the execution of "build_extended_circulation_system()"
-        function execution.
-
-        :param uniprot_system: The set of uniprots for which the larger system was calculated
-        :param uniprot_subsystem: the set of reached_uniprots_bulbs_id_list we are interested in
-        :raise Exception: if the set of uniprots for which the larger system was calculated
-         doesn't correspond to what is stored in the dumps
-        """
-        current_recombinator = self.undump_memoized()
-        if not set(uniprot_system) == set(
-                pickle.loads(current_recombinator['UPs'])):
-            raise Exception('Wrong UP system re-analyzed')
-        self.uniprots_2_voltage_and_circulation = pickle.loads(
-            current_recombinator['voltages'])
-        self.set_uniprot_source(uniprot_subsystem)
-        self.build_extended_conduction_system(memoized=False, sourced=True)
-        self.export_conduction_system()
 
     def randomly_sample(
             self,
@@ -927,7 +917,7 @@ class GeneOntologyInterface(object):
                 analytics_up_list = self_connectable_uniprots[:sample_size]
                 self.set_uniprot_source(analytics_up_list)
                 self.build_extended_conduction_system(
-                    memoized=memoized, sourced=False, sparse_samples=sparse_rounds)
+                    memoized=memoized, sparse_fraction=sparse_rounds)
 
                 md5 = hashlib.md5(
                     json.dumps(

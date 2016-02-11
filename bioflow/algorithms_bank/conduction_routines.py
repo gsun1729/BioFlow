@@ -177,25 +177,23 @@ def edge_current_iteration(conductivity_laplacian, index_pair,
     return potential_diff, current_upper
 
 
-# TODO: switch from sampling_depth to sampling_proportion
 def master_edge_current(conductivity_laplacian, index_list,
-                        second_index_list=None, sampling_percentage=0.1,
-                        cancellation=True, potential_dominated=True, sampling=False,
-                        sampling_depth=10,  # TODO: deprecated
-                        memory_source=None,  # TODO: deprecated
-                        memoization=None  # TODO: deprecated
-                        ):
+                        second_index_list=None,
+                        sampling=False, sampling_fraction=0.1,
+                        reach_limiter=None,  # TODO: we actually need UP2GO_reach_nodes dict here
+                        cancellation=True, potential_dominated=True,):
     """
     master method for all the required edge current calculations
 
     :param conductivity_laplacian:
     :param index_list:
     :param second_index_list:
-    :param sampling_percentage:
+    :param sampling_fraction:
     :param cancellation:
     :param potential_dominated:
     :param sampling:
-    :return:
+    :param reach_limiter:
+    :return: current_accumulator, up_pair_2_voltage_current_dict
     """
     if not second_index_list:
         second_index_list = index_list
@@ -205,13 +203,13 @@ def master_edge_current(conductivity_laplacian, index_list,
 
     if sampling:
         random.shuffle(list_of_pairs)  # TODO: PERFORMANCE: potentially memory inefficient. Profile
-        list_of_pairs = list_of_pairs[:int(sampling_percentage*pairs_no)]
+        list_of_pairs = list_of_pairs[:int(sampling_fraction * pairs_no)]
 
     total_pairs = len(list_of_pairs)
 
     log.info('Calculating the flow between %s pairs', total_pairs)
 
-    up_pair_2_voltage_current = {}
+    up_pair_2_voltage_current_dict = {}
     current_accumulator = lil_matrix(conductivity_laplacian.shape)
     solver = cholesky(csc_matrix(conductivity_laplacian), fudge)
 
@@ -221,17 +219,18 @@ def master_edge_current(conductivity_laplacian, index_list,
         if counter % total_pairs/100 == 0:
             log.debug('getting pairwise flow %s out of %s', counter + 1, total_pairs)
 
-        if memory_source and tuple(sorted((i, j))) in memory_source.keys():
-            potential_diff, current_upper = memory_source[tuple(sorted((i, j)))]
-
+        if reach_limiter:
+            # TODO: Reach needs to be computed here
+            potential_diff, current_upper = \
+                edge_current_iteration(conductivity_laplacian, (i, j),
+                                       reach_limiter=reach_limiter)
         else:
             potential_diff, current_upper = \
                 edge_current_iteration(conductivity_laplacian, (i, j),
                                        solver=solver)
 
-        if memoization:
-            up_pair_2_voltage_current[tuple(sorted((i, j)))] = \
-                (potential_diff, current_upper)
+        up_pair_2_voltage_current_dict[tuple(sorted((i, j)))] = \
+            (potential_diff, current_upper)
 
         # normalize to potential, if needed
         if potential_dominated:
@@ -249,70 +248,10 @@ def master_edge_current(conductivity_laplacian, index_list,
     if cancellation:
         current_accumulator /= total_pairs
 
-    return current_accumulator, up_pair_2_voltage_current
+    return current_accumulator, up_pair_2_voltage_current_dict
 
 
-def group_edge_current(conductivity_laplacian, index_list,
-                       cancellation=False, potential_dominated=True):
-    """
-    Performs a pairwise computation and summation of the
-
-    :param conductivity_laplacian:  Laplacian representing the conductivity
-    :param index_list: list of the indexes acting as current sources/sinks
-    :param cancellation: if True, conductance would be normalized to number of sinks used
-    :param potential_dominated: if set to True, the computation is done by injecting constant
-    potential difference into the system, not a constant current.
-    :return: current matrix for the flow system; current through each node.
-    """
-    current_accumulator, _ = master_edge_current(
-        conductivity_laplacian, index_list,
-        cancellation=cancellation,
-        potential_dominated=potential_dominated)
-
-    return current_accumulator
-
-
-def group_edge_current_memoized(conductivity_laplacian, index_list,
-                                cancellation=True, memory_source=None):
-    """
-    Performs a pairwise computation and summation of the pairwise_flow
-
-    :param conductivity_laplacian: Laplacian representing the conductivity
-    :param index_list: list of the indexes acting as current sources/sinks
-    :param cancellation: if True, conductance would be normalized to number of sinks used
-    :param memory_source: dictionary of memoized tension and current flow through the circuit
-    :return: current matrix for the flow system, current through each node.
-    """
-    return master_edge_current(conductivity_laplacian, index_list,
-                               cancellation=cancellation,
-                               memory_source=memory_source,
-                               memoization=True)
-
-
-def sample_group_edge_current(conductivity_laplacian, index_list, re_samples,
-                              cancellation=False):
-    """
-    Performs sampling of pairwise flow in a conductance system.
-
-    :param conductivity_laplacian: Laplacian representing the conductivity
-    :param index_list: list of the indexes acting as current sources/sinks
-    :param cancellation: if True, conductance would be normalized to number of sinks used
-    :param re_samples: number of times each element in idxlist will be sample.
-    A reasonable minimal is such that len(idxlist)*resamples < 20 000
-    :return: current matrix representing the flows from one node to the other. This
-    flow is absolute and does not respect the Kirchoff's laws. However, it can be used to
-    see the most important connections between the GO terms or Interactome and can be used to
-    compute the flow through the individual nodes.
-    """
-
-    current_accumulator, _ = master_edge_current(conductivity_laplacian, index_list,
-                                                 cancellation=cancellation,
-                                                 sampling=True,
-                                                 sampling_depth=re_samples)
-
-    return current_accumulator
-
-
+# TODO: REFACTORING: inline into the master_edge_current
 def group_edge_current_with_limitations(inflated_laplacian, idx_pair, reach_limiter):
     """
     Recovers the current passing through a conduction system while enforcing the limitation
@@ -327,7 +266,7 @@ def group_edge_current_with_limitations(inflated_laplacian, idx_pair, reach_limi
     inverter = edge_current_iteration(inflated_laplacian, idx_pair,
                                       reach_limiter=reach_limiter)
 
-    return inverter[1]/inverter[0], inverter[0]
+    return inverter[1] / inverter[0], inverter[0]
 
 
 def perform_clustering(inter_node_tension, cluster_number, show='undefined clustering'):

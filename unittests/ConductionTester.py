@@ -54,13 +54,13 @@ class ConductionRoutinesTester(unittest.TestCase):
         self.assertTrue(np.mean(np.abs(node_currents - ref)) < 1e-9)
 
     def test_group_induced_current(self):
-        triu_currents = cr.group_edge_current(self.test_laplacian, [0, 1, 2])
+        triu_currents, _ = cr.master_edge_current(self.test_laplacian, [0, 1, 2])
         calc = triu_currents.toarray()[:, 2].tolist()
         ref = np.array([1.6666666666, 2.666666666, 0, 0])
         self.assertTrue(np.mean(np.abs(calc - ref)) < 1e-9)
 
     def test_group_induced_current_memoized(self):
-        triu_currents, memoizer = cr.group_edge_current_memoized(self.test_laplacian, [0, 1, 2])
+        triu_currents, memoizer = cr.master_edge_current(self.test_laplacian, [0, 1, 2])
         calc = triu_currents.toarray()[:, 2].tolist()
         ref = np.array([1.6666666666, 2.666666666, 0, 0])/3.
         self.assertTrue(np.mean(np.abs(calc - ref)) < 1e-9)
@@ -92,7 +92,8 @@ class ConductionRoutinesTester(unittest.TestCase):
 
     def test_current_with_reach_limitations(self):
         calc_m, current = cr.group_edge_current_with_limitations(self.test_laplacian,
-                                                                 (0, 2), [0, 2])
+                                                                 (0, 2),
+                                                                 reach_limiter=[0, 2])
         chm = np.zeros((4, 4))
         chm[0, 2] = -1
         calc_m = calc_m.toarray()

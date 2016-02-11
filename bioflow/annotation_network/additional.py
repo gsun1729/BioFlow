@@ -65,6 +65,7 @@ def decide_regeneration():
     log.info('decide_regeneration 1: %s', go_interface_instance.pretty_time())
     for i in range(2, 9):
         shuffle(rooot_copy)
+        # NOW IS BROKEN!
         go_interface_instance.export_subsystem(sample_root, rooot_copy[:i ** 2])
         log.info('decide_regeneration 2: %s, retrieve \t %s',
                  i ** 2, go_interface_instance.pretty_time())
