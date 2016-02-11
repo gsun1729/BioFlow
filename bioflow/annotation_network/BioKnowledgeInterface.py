@@ -703,7 +703,6 @@ class GeneOntologyInterface(object):
         self.analytic_uniprots = [
             uniprot for uniprot in uniprots if uniprot in self.UP2GO_Dict.keys()]
 
-    # TODO: CRITICAL: backtrack sparse_fraction all the way up where the number is decided!
     def build_extended_conduction_system(
             self,
             memoized=True,
@@ -863,7 +862,7 @@ class GeneOntologyInterface(object):
             self,
             samples_size,
             samples_each_size,
-            sparse_rounds=False,
+            sparse_fraction=False,
             chromosome_specific=False,
             memoized=False,
             no_add=False):
@@ -874,7 +873,7 @@ class GeneOntologyInterface(object):
 
         :param samples_size: list of numbers of uniprots we would like to create the model for
         :param samples_each_size: how many times we would like to sample each unirot number
-        :param sparse_rounds:  if we want to use sparse sampling
+        :param sparse_fraction:  if we want to use sparse sampling
         (usefull in case of large uniprot sets),
         we would use this option
         :param chromosome_specific: if we want the sampling to be chromosome-specific,
@@ -905,7 +904,7 @@ class GeneOntologyInterface(object):
                 analytics_up_list = self_connectable_uniprots[:sample_size]
                 self.set_uniprot_source(analytics_up_list)
                 self.build_extended_conduction_system(
-                    memoized=memoized, sparse_fraction=sparse_rounds)
+                    memoized=memoized, sparse_fraction=sparse_fraction)
 
                 md5 = hashlib.md5(
                     json.dumps(
@@ -919,7 +918,7 @@ class GeneOntologyInterface(object):
                             'sys_hash': self.md5_hash(),
                             'size': sample_size,
                             'chrom': str(chromosome_specific),
-                            'sparse_rounds': sparse_rounds,
+                            'sparse_fraction': sparse_fraction,
                             'UPs': pickle.dumps(analytics_up_list),
                             'currents': pickle.dumps(
                                 (self.current_accumulator,

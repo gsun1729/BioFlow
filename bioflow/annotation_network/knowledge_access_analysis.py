@@ -513,7 +513,9 @@ def auto_analyze(source=None, go_interface_instance=None, processors=3, desired_
                 param_set=param_set)
 
         else:
-            sampling_depth = max(200 ** 2 / len(go_interface_instance.analytic_uniprots), 5)
+            node_pool_size = len(go_interface_instance.analytic_uniprots)
+            sampling_depth = max(200 ** 2 / node_pool_size,5)
+            sampling_depth = float(sampling_depth) / (node_pool_size * (node_pool_size - 1))
 
             if not skip_sampling:
 
