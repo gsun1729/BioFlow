@@ -78,6 +78,18 @@ Install and activate Oracle Java 1.7::
     apt-get -y install oracle-java7-installer
     apt-get -y install oracle-java7-set-default
 
+If installing on Ubuntu 16.04::
+    To install Java 1.7, run commands from the dockerfile in the home project directory (listed below as well). If sudo command does not work, run "sudo su" to enter root user, then run commands. To exit, run "su <INSERT_USERNAME_HERE>"
+    
+    
+    wget https://www.dropbox.com/sh/gxeklrzkq58ydsf/AADF4dimrwsmsprUxgm2Iwn8a/jdk-7u80-linux-x64.tar.gz?dl=1
+    mv jdk-7u80-linux-x64.tar.gz?dl=1 jdk-7u80-linux-x64.tar.gz
+    mkdir /var/cache/oracle-jdk7-installer/
+    sudo mv jdk-7u80-linux-x64.tar.gz /var/cache/oracle-jdk7-installer/
+
+    apt-get install -y curl dnsutils oracle-java7-installer ca-certificates
+    apt-get -yq install oracle-java7-set-default
+
 Install neo4j::
 
     git clone https://github.com/chiffa/neo4j-community-1.9.6.git
