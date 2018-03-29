@@ -67,6 +67,20 @@ Install basic dependencies for Python modules::
 
     # in case you are on a docker image of ubuntu 14.04:
     apt-get -y install wget git curl nohup
+    
+   
+If you encounter an error with installing nohup (Unable to locate package nohup), run the following work around :
+    # will be made inactive shortly
+    curl -sL https://deb.nodesource.com/setup |sudo -E bash -
+    # Newer version (Nod.js v4 LTS Argon)
+    curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    node -v
+    npm -v
+    supd apt install npm
+    npm install nohup
+    # Verification step to make sure that nohup was installed
+    cd node_modules/nohup
 
 Install and activate Oracle Java 1.7::
 
